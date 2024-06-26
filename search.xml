@@ -4,13 +4,27 @@
   
     
     <entry>
-      <title></title>
+      <title>SQL优化</title>
       <link href="/2024/06/26/SQL%E4%BC%98%E5%8C%96/"/>
       <url>/2024/06/26/SQL%E4%BC%98%E5%8C%96/</url>
       
-        <content type="html"><![CDATA[<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">title: SQL优化</span><br><span class="line">date: 2024-06-26 18:33:56</span><br><span class="line">tags: [数据库,SQL]</span><br><span class="line">categories: [数据库]</span><br></pre></td></tr></table></figure><p>常见的SQL优化分为以下几类<br><img src="/2024/06/26/SQL%E4%BC%98%E5%8C%96/blog\source_posts\SQL优化\1719398846884-6949f355-7e1b-4297-80d9-8d47c86f612b.jpeg"></p><h1 id="插入数据数据优化"><a href="#插入数据数据优化" class="headerlink" title="插入数据数据优化"></a>插入数据数据优化</h1><p>平常我们在插入数据时，可能通常是一条一条插入，这样的效率显然不高，所以可以通过一次性往数据库中插入多条记录，主要的优化点有三个</p><h2 id="直接在values后面通过逗号来分割多条数据"><a href="#直接在values后面通过逗号来分割多条数据" class="headerlink" title="直接在values后面通过逗号来分割多条数据"></a>直接在values后面通过逗号来分割多条数据</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> tb <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">&#x27;张三&#x27;</span>),(<span class="number">2</span>,<span class="string">&#x27;李四&#x27;</span>),(<span class="number">3</span>,<span class="string">&#x27;王五&#x27;</span>);</span><br></pre></td></tr></table></figure><h2 id="按主键顺序插入"><a href="#按主键顺序插入" class="headerlink" title="按主键顺序插入"></a>按主键顺序插入</h2><p>因为按主键顺序插入的方式性能要高于乱序插入（具体在下面主键优化那里会说）</p><h2 id="使用load指令来插入"><a href="#使用load指令来插入" class="headerlink" title="使用load指令来插入"></a>使用load指令来插入</h2><p>如果一次性需要插入大批量数据，比如几百万条，使用insert语句插入性能较低，此时可以使用mysql数据库提供的load指令进行插入</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 客户端连接服务端时，加上参数 -–local-infile</span></span><br><span class="line">mysql –<span class="operator">-</span><span class="keyword">local</span><span class="operator">-</span>infile <span class="operator">-</span>u root <span class="operator">-</span>p</span><br><span class="line"><span class="comment">-- 设置全局参数local_infile为1，开启从本地加载文件导入数据的开关</span></span><br><span class="line"><span class="keyword">set</span> <span class="keyword">global</span> local_infile <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line"><span class="comment">-- 执行load指令将准备好的数据，加载到表结构中</span></span><br><span class="line">load data <span class="keyword">local</span> infile <span class="string">&#x27;/root/sql1.log&#x27;</span> <span class="keyword">into</span> <span class="keyword">table</span> tb_user fields</span><br><span class="line">terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span> lines terminated <span class="keyword">by</span> <span class="string">&#x27;\n&#x27;</span> ;</span><br></pre></td></tr></table></figure><h1 id="主键优化"><a href="#主键优化" class="headerlink" title="主键优化"></a>主键优化</h1><p>在innoDB存储引擎中，表数据都是根据主键顺序组织存放的<br><img src="https://fanzher.xyz/img/1719399580077-44fe4428-d799-4163-a138-c03a88154a49.png" alt="image.png"><br>对于聚集索引，行数据，都是存储在聚集索引的叶子节点上的<br><img src="https://fanzher.xyz/img/1719399852420-35ee803b-a605-4224-8231-d082a2399d65.png" alt="image.png"><br>在innoDB引擎中，数据行是记录在逻辑结构page页中，而每一页的大小都是固定的，默认16K。也就是说，一页中所存储的行是有限的，如果插入的数据行row在该页存储不下，就会存储到下一个页中，页与页之间会通过指针连接。<br>如果不是按主键顺序插入的话，而是采用乱序插入，那么当插入的主键需要在已插入的主键中间去插入，这个时候就会出现<strong>页分裂</strong>的现象，并且页分裂后还需要重新设置链表指针，保证是按主键顺序来组织的，这是比较耗费性能的操作。<br><img src="https://fanzher.xyz/img/1719400871488-eb55e19b-44e4-4b95-a167-f42617268800.png" alt="image.png"><br><img src="https://fanzher.xyz/img/1719400887390-c6472641-1577-4055-8b34-89ec2436e469.png" alt="image.png"></p><h1 id="order-by优化"><a href="#order-by优化" class="headerlink" title="order by优化"></a>order by优化</h1><p>在MySQL中，排序方式主要有两种</p><ul><li>Using filesort:通过表的索引或者全表扫描，读取满足条件的数据，然后再排序缓冲池中完成排序操作，所有不是通过索引直接返回排序结果的排序都是全表扫描</li><li>Using index: 通过有序索引顺序扫描直接返回有序数据，不需要额外排序</li></ul><p>使用Using index的排序效率更高，所以在优化排序操作的时候，尽量使用Using index</p><blockquote><p>order by优化原则</p><ol><li>根据排序字段建立合适的索引，多字段排序时，也遵循最左前缀法则</li><li>尽量使用覆盖索引</li><li>多字段排序，一个升序一个降序，此时需要注意联合索引在创建时的规则</li><li>如果不可避免出现filesort,大数据量排序时，可以适当增大排序缓冲区大小</li></ol></blockquote><h1 id="group-by优化"><a href="#group-by优化" class="headerlink" title="group by优化"></a>group by优化</h1><p>其实大部分优化操作，都是对索引的合理设计，对于分组操作，也是看索引对分组操作的影响。</p><blockquote><p>group by优化原则</p><ol><li>在分组操作时，可以通过索引来提高效率</li><li>分组操作时，索引的使用也是满足最左前缀法则的</li></ol></blockquote><h1 id="limit优化"><a href="#limit优化" class="headerlink" title="limit优化"></a>limit优化</h1><p>对于limit分页操作，越往后，分页查询效率越低，因为在分页查询时，比如执行 limit 20000 10,此时需要排序前20010记录，仅仅返回20000-20010的记录，其他记录丢弃，查询排序的代价非常大。</p><blockquote><p>limit优化原则<br>可以通过创建<strong>覆盖索引</strong>的方式提升性能</p></blockquote><h1 id="count优化"><a href="#count优化" class="headerlink" title="count优化"></a>count优化</h1><p>对于InnoDB引擎，它执行count(*)的时候，需要把数据一行一行地从引擎里面读出来，然后累积计数。</p><table><thead><tr><th>count用法</th><th>含义</th></tr></thead><tbody><tr><td>count(*)</td><td>InnoDB引擎并不会把全部字段取出来，而是专门做了优化，不取值，服务层直接按行进行累加。</td></tr><tr><td>count(主键)</td><td>InnoDB 引擎会遍历整张表，把每一行的主键id 值都取出来，返回给服务层。 服务层拿到主键后，直接按行进行累加(主键不可能为null)</td></tr><tr><td>count(字段)</td><td>没有not null 约束 : InnoDB 引擎会遍历整张表把每一行的字段值都取出来，返回给服务层，服务层判断是否为null，不为null，计数累加。 有not null 约束：InnoDB 引擎会遍历整张表把每一行的字段值都取出来，返回给服务层，直接按行进行累加。</td></tr><tr><td>count(数字)</td><td>InnoDB 引擎遍历整张表，但不取值。服务层对于返回的每一行，放一个数字“1” 进去，直接按行进行累加。</td></tr></tbody></table><blockquote><p>使用count(<em>)和count(数字)并不会把值取出来，而是直接进行计算<br>效率：count(字段)&lt;count(主键)&lt;count(数字)≈count(</em>)</p></blockquote>]]></content>
+        <content type="html"><![CDATA[<p>常见的SQL优化分为以下几类<br><img src="/2024/06/26/SQL%E4%BC%98%E5%8C%96/blog\source_posts\SQL优化\1719398846884-6949f355-7e1b-4297-80d9-8d47c86f612b.jpeg"></p><h1 id="插入数据数据优化"><a href="#插入数据数据优化" class="headerlink" title="插入数据数据优化"></a>插入数据数据优化</h1><p>平常我们在插入数据时，可能通常是一条一条插入，这样的效率显然不高，所以可以通过一次性往数据库中插入多条记录，主要的优化点有三个</p><h2 id="直接在values后面通过逗号来分割多条数据"><a href="#直接在values后面通过逗号来分割多条数据" class="headerlink" title="直接在values后面通过逗号来分割多条数据"></a>直接在values后面通过逗号来分割多条数据</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> tb <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">&#x27;张三&#x27;</span>),(<span class="number">2</span>,<span class="string">&#x27;李四&#x27;</span>),(<span class="number">3</span>,<span class="string">&#x27;王五&#x27;</span>);</span><br></pre></td></tr></table></figure><h2 id="按主键顺序插入"><a href="#按主键顺序插入" class="headerlink" title="按主键顺序插入"></a>按主键顺序插入</h2><p>因为按主键顺序插入的方式性能要高于乱序插入（具体在下面主键优化那里会说）</p><h2 id="使用load指令来插入"><a href="#使用load指令来插入" class="headerlink" title="使用load指令来插入"></a>使用load指令来插入</h2><p>如果一次性需要插入大批量数据，比如几百万条，使用insert语句插入性能较低，此时可以使用mysql数据库提供的load指令进行插入</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- 客户端连接服务端时，加上参数 -–local-infile</span></span><br><span class="line">mysql –<span class="operator">-</span><span class="keyword">local</span><span class="operator">-</span>infile <span class="operator">-</span>u root <span class="operator">-</span>p</span><br><span class="line"><span class="comment">-- 设置全局参数local_infile为1，开启从本地加载文件导入数据的开关</span></span><br><span class="line"><span class="keyword">set</span> <span class="keyword">global</span> local_infile <span class="operator">=</span> <span class="number">1</span>;</span><br><span class="line"><span class="comment">-- 执行load指令将准备好的数据，加载到表结构中</span></span><br><span class="line">load data <span class="keyword">local</span> infile <span class="string">&#x27;/root/sql1.log&#x27;</span> <span class="keyword">into</span> <span class="keyword">table</span> tb_user fields</span><br><span class="line">terminated <span class="keyword">by</span> <span class="string">&#x27;,&#x27;</span> lines terminated <span class="keyword">by</span> <span class="string">&#x27;\n&#x27;</span> ;</span><br></pre></td></tr></table></figure><h1 id="主键优化"><a href="#主键优化" class="headerlink" title="主键优化"></a>主键优化</h1><p>在innoDB存储引擎中，表数据都是根据主键顺序组织存放的<br><img src="https://fanzher.xyz/img/1719399580077-44fe4428-d799-4163-a138-c03a88154a49.png" alt="image.png"><br>对于聚集索引，行数据，都是存储在聚集索引的叶子节点上的<br><img src="https://fanzher.xyz/img/1719399852420-35ee803b-a605-4224-8231-d082a2399d65.png" alt="image.png"><br>在innoDB引擎中，数据行是记录在逻辑结构page页中，而每一页的大小都是固定的，默认16K。也就是说，一页中所存储的行是有限的，如果插入的数据行row在该页存储不下，就会存储到下一个页中，页与页之间会通过指针连接。<br>如果不是按主键顺序插入的话，而是采用乱序插入，那么当插入的主键需要在已插入的主键中间去插入，这个时候就会出现<strong>页分裂</strong>的现象，并且页分裂后还需要重新设置链表指针，保证是按主键顺序来组织的，这是比较耗费性能的操作。<br><img src="https://fanzher.xyz/img/1719400871488-eb55e19b-44e4-4b95-a167-f42617268800.png" alt="image.png"><br><img src="https://fanzher.xyz/img/1719400887390-c6472641-1577-4055-8b34-89ec2436e469.png" alt="image.png"></p><h1 id="order-by优化"><a href="#order-by优化" class="headerlink" title="order by优化"></a>order by优化</h1><p>在MySQL中，排序方式主要有两种</p><ul><li>Using filesort:通过表的索引或者全表扫描，读取满足条件的数据，然后再排序缓冲池中完成排序操作，所有不是通过索引直接返回排序结果的排序都是全表扫描</li><li>Using index: 通过有序索引顺序扫描直接返回有序数据，不需要额外排序</li></ul><p>使用Using index的排序效率更高，所以在优化排序操作的时候，尽量使用Using index</p><blockquote><p>order by优化原则</p><ol><li>根据排序字段建立合适的索引，多字段排序时，也遵循最左前缀法则</li><li>尽量使用覆盖索引</li><li>多字段排序，一个升序一个降序，此时需要注意联合索引在创建时的规则</li><li>如果不可避免出现filesort,大数据量排序时，可以适当增大排序缓冲区大小</li></ol></blockquote><h1 id="group-by优化"><a href="#group-by优化" class="headerlink" title="group by优化"></a>group by优化</h1><p>其实大部分优化操作，都是对索引的合理设计，对于分组操作，也是看索引对分组操作的影响。</p><blockquote><p>group by优化原则</p><ol><li>在分组操作时，可以通过索引来提高效率</li><li>分组操作时，索引的使用也是满足最左前缀法则的</li></ol></blockquote><h1 id="limit优化"><a href="#limit优化" class="headerlink" title="limit优化"></a>limit优化</h1><p>对于limit分页操作，越往后，分页查询效率越低，因为在分页查询时，比如执行 limit 20000 10,此时需要排序前20010记录，仅仅返回20000-20010的记录，其他记录丢弃，查询排序的代价非常大。</p><blockquote><p>limit优化原则<br>可以通过创建<strong>覆盖索引</strong>的方式提升性能</p></blockquote><h1 id="count优化"><a href="#count优化" class="headerlink" title="count优化"></a>count优化</h1><p>对于InnoDB引擎，它执行count(*)的时候，需要把数据一行一行地从引擎里面读出来，然后累积计数。</p><table><thead><tr><th>count用法</th><th>含义</th></tr></thead><tbody><tr><td>count(*)</td><td>InnoDB引擎并不会把全部字段取出来，而是专门做了优化，不取值，服务层直接按行进行累加。</td></tr><tr><td>count(主键)</td><td>InnoDB 引擎会遍历整张表，把每一行的主键id 值都取出来，返回给服务层。 服务层拿到主键后，直接按行进行累加(主键不可能为null)</td></tr><tr><td>count(字段)</td><td>没有not null 约束 : InnoDB 引擎会遍历整张表把每一行的字段值都取出来，返回给服务层，服务层判断是否为null，不为null，计数累加。 有not null 约束：InnoDB 引擎会遍历整张表把每一行的字段值都取出来，返回给服务层，直接按行进行累加。</td></tr><tr><td>count(数字)</td><td>InnoDB 引擎遍历整张表，但不取值。服务层对于返回的每一行，放一个数字“1” 进去，直接按行进行累加。</td></tr></tbody></table><blockquote><p>使用count(<em>)和count(数字)并不会把值取出来，而是直接进行计算<br>效率：count(字段)&lt;count(主键)&lt;count(数字)≈count(</em>)</p></blockquote>]]></content>
       
       
+      <categories>
+          
+          <category> 数据库 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 数据库 </tag>
+            
+            <tag> SQL </tag>
+            
+        </tags>
       
     </entry>
     
@@ -35,9 +49,9 @@
       
         <tags>
             
-            <tag> mysql </tag>
-            
             <tag> 数据库 </tag>
+            
+            <tag> mysql </tag>
             
             <tag> sql </tag>
             
@@ -126,9 +140,9 @@
     
     
     <entry>
-      <title>categories</title>
-      <link href="/categories/index.html"/>
-      <url>/categories/index.html</url>
+      <title>关于</title>
+      <link href="/about/index.html"/>
+      <url>/about/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
@@ -148,9 +162,9 @@
     
     
     <entry>
-      <title>关于</title>
-      <link href="/about/index.html"/>
-      <url>/about/index.html</url>
+      <title>categories</title>
+      <link href="/categories/index.html"/>
+      <url>/categories/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
@@ -181,6 +195,17 @@
     
     
     <entry>
+      <title>photos</title>
+      <link href="/photos/index.html"/>
+      <url>/photos/index.html</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>电影</title>
       <link href="/movies/index.html"/>
       <url>/movies/index.html</url>
@@ -195,17 +220,6 @@
       <title>音乐</title>
       <link href="/music/index.html"/>
       <url>/music/index.html</url>
-      
-        <content type="html"><![CDATA[]]></content>
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>photos</title>
-      <link href="/photos/index.html"/>
-      <url>/photos/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
