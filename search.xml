@@ -621,18 +621,7 @@
       <link href="/about/index.html"/>
       <url>/about/index.html</url>
       
-        <content type="html"><![CDATA[]]></content>
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title></title>
-      <link href="/css/font.css"/>
-      <url>/css/font.css</url>
-      
-        <content type="html"><![CDATA[@font-face {    font-family: "iconfont"; /* Project id 4641720 */    src: url('//at.alicdn.com/t/c/font_4641720_p1vl16xwn7.woff2?t=1722588782914') format('woff2'),    url('//at.alicdn.com/t/c/font_4641720_p1vl16xwn7.woff?t=1722588782914') format('woff'),    url('//at.alicdn.com/t/c/font_4641720_p1vl16xwn7.ttf?t=1722588782914') format('truetype');}.iconfont {    font-family: "iconfont" !important;    font-size: 20px;    font-style: normal;    -webkit-font-smoothing: antialiased;    -moz-osx-font-smoothing: grayscale;}.icon-bilibili:before {    content: "\eb78";}.icon-gitee:before {    content: "\e616";}]]></content>
+        <content type="html"><![CDATA[<h1 id="为什么创建个人博客？"><a href="#为什么创建个人博客？" class="headerlink" title="为什么创建个人博客？"></a>为什么创建个人博客？</h1><ol><li>首先是觉得自己在学习知识的时候，很多东西都是找着讲义来学，之后也是跟着讲义来复习，这样导致我无法定位我在学习中遇到的问题，无法针对性的复习，所以希望通过博客来记录个人的学习过程。</li><li>第二个就是眼过千遍，不如手过一遍，养成良好的编写博客的习惯能锻炼自己的思维能力，并进一步锻炼自己的口语表达能力，很多时候只是看，自己并不一定能够完整的凝练、复述。</li><li>第三点是觉得记录一下个人的成长过程是一件有意思的事情，等过一段时间再回看自己的经历，希望能够感谢当初的自己吧。<h1 id="关于我"><a href="#关于我" class="headerlink" title="关于我"></a>关于我</h1></li></ol><ul><li>昵称：stufz</li><li>性别：男</li><li>身份：北方某高校计算机硕士在读</li><li>邮箱：1063297049@qq.com</li><li>座右铭：我们对待生活的评论，映射的是我们对待生活的态度，只有善待生活，生活才会善待于你</li></ul>]]></content>
       
     </entry>
     
@@ -650,6 +639,17 @@
     
     
     <entry>
+      <title>link</title>
+      <link href="/link/index.html"/>
+      <url>/link/index.html</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title></title>
       <link href="/js/runtime.js"/>
       <url>/js/runtime.js</url>
@@ -661,9 +661,9 @@
     
     
     <entry>
-      <title>link</title>
-      <link href="/link/index.html"/>
-      <url>/link/index.html</url>
+      <title>音乐</title>
+      <link href="/music/index.html"/>
+      <url>/music/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
@@ -683,9 +683,9 @@
     
     
     <entry>
-      <title>音乐</title>
-      <link href="/music/index.html"/>
-      <url>/music/index.html</url>
+      <title>tags</title>
+      <link href="/tags/index.html"/>
+      <url>/tags/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
@@ -694,11 +694,11 @@
     
     
     <entry>
-      <title>tags</title>
-      <link href="/tags/index.html"/>
-      <url>/tags/index.html</url>
+      <title></title>
+      <link href="/css/font.css"/>
+      <url>/css/font.css</url>
       
-        <content type="html"><![CDATA[]]></content>
+        <content type="html"><![CDATA[@font-face {    font-family: "iconfont"; /* Project id 4641720 */    src: url('//at.alicdn.com/t/c/font_4641720_p1vl16xwn7.woff2?t=1722588782914') format('woff2'),    url('//at.alicdn.com/t/c/font_4641720_p1vl16xwn7.woff?t=1722588782914') format('woff'),    url('//at.alicdn.com/t/c/font_4641720_p1vl16xwn7.ttf?t=1722588782914') format('truetype');}.iconfont {    font-family: "iconfont" !important;    font-size: 20px;    font-style: normal;    -webkit-font-smoothing: antialiased;    -moz-osx-font-smoothing: grayscale;}.icon-bilibili:before {    content: "\eb78";}.icon-gitee:before {    content: "\e616";}]]></content>
       
     </entry>
     
